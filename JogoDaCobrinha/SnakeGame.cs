@@ -21,8 +21,8 @@ namespace JogoDaCobrinha
         private readonly Snake snake = new Snake();
         private Pos fruit;
         private readonly Stopwatch time = new Stopwatch();
-        private readonly int widthWindow = 60;
-        private readonly int heightWindow = 20;
+        private readonly int widthWindow = Math.Min(Console.WindowWidth, 60);
+        private readonly int heightWindow = Math.Min(Console.WindowHeight, 20);
         private readonly char[,] window;
         public int HeightWindow
         { get { return heightWindow; } }
