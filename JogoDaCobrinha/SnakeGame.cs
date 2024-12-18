@@ -14,6 +14,25 @@ namespace JogoDaCobrinha
             X = x;
             Y = y;
         }
+        public override int GetHashCode()
+        {
+            return X.GetHashCode() ^ Y.GetHashCode();
+        }
+        public static bool operator ==(Pos p1, Pos p2)
+        {
+            return p1.X == p2.X && p1.Y == p2.Y;
+        }
+        public static bool operator !=(Pos p1, Pos p2)
+        {
+            return !(p1 == p2);
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType()) return false;
+            Pos otherPos = (Pos)obj;
+            return X == otherPos.X && Y == otherPos.Y;
+        }
+
     }
 
     public class SnakeGame
@@ -36,7 +55,6 @@ namespace JogoDaCobrinha
             Console.CursorVisible = false;
         }
 
-
         public void Start()
         {
             SummonSnake();
@@ -53,7 +71,7 @@ namespace JogoDaCobrinha
                 {
                     snake.Kill();
                     time.Stop();
-                    Console.WriteLine("\nYou died.");
+                    Console.WriteLine("\nVOCE MORREU.");
                     ShowStats();
                     Console.WriteLine("Aperte ESC para sair.");
                     Console.WriteLine("Aperte ENTER para jogar novamente.");
@@ -68,22 +86,27 @@ namespace JogoDaCobrinha
 
                 snake.Move();
                 DisplayWindow();
-                Thread.Sleep(30);
+                if (snake.Direction == SnakeDirection.Up || snake.Direction == SnakeDirection.Down)
+                {
+                    Thread.Sleep(45);
+                }
+                else
+                {
+                    Thread.Sleep(30);
+                }
             }
         }
 
         public void ShowStats()
         {
-            Console.WriteLine("Tamanho da sua cobra: {0}", snake.Size);
+            string msg;
+            Console.WriteLine($"Tamanho da sua cobra: {snake.Size}");
             if (time.Elapsed.Minutes == 0)
             {
-                Console.WriteLine("O tempo percorrido foi: {0} segundos", time.Elapsed.Seconds);
-            } 
-            else
-            {
-                Console.WriteLine("O tempo percorrido foi: {0}:{1}", time.Elapsed.Minutes, time.Elapsed.Seconds);
+                msg = $"O tempo percorrido foi: {time.Elapsed.Seconds} segundos";
             }
-
+            else msg = $"O tempo percorrido foi: {time.Elapsed.Minutes}:{time.Elapsed.Seconds}";
+            Console.WriteLine(msg);
         }
 
         private void SummonSnake()
@@ -95,18 +118,31 @@ namespace JogoDaCobrinha
 
         private bool HasEatenFruit()
         {
-            return (snake.Head.X == fruit.X && snake.Head.Y == fruit.Y);
+            return (snake.Head == fruit);
         }
 
         private void SummonFruit()
         {
             Random rnd = new Random();
-            int x, y;
-            while (true)
+            int x = 0, y = 0;
+            bool spawn = false;
+
+            while (!spawn)
             {
                 x = rnd.Next(5, WidthWindow - 5);
                 y = rnd.Next(5, HeightWindow - 5);
-                if (x != snake.Head.X || y != snake.Head.Y) break;
+
+                Pos newFruit = new Pos(x, y);
+
+                spawn = true;
+                foreach (var bodyPart in snake.Body)
+                {
+                    if (bodyPart == newFruit)
+                    {
+                        spawn = false; 
+                        break;
+                    }
+                }
             }
             fruit = new Pos(x, y);
         }
@@ -117,16 +153,36 @@ namespace JogoDaCobrinha
             {
                 ConsoleKey Key = Console.ReadKey(true).Key;
                 if ((Key == ConsoleKey.LeftArrow) && !(snake.Direction == SnakeDirection.Right))
-                { snake.Direction = SnakeDirection.Left; }
+                { 
+                    if (snake.Head.X - 1 != snake.Body[1].X)
+                    {
+                        snake.Direction = SnakeDirection.Left; 
+                    }
+                }
 
                 if ((Key == ConsoleKey.RightArrow) && !(snake.Direction == SnakeDirection.Left))
-                { snake.Direction = SnakeDirection.Right; }
+                {
+                    if (snake.Head.X + 1 != snake.Body[1].X)
+                    {
+                        snake.Direction = SnakeDirection.Right; 
+                    }
+                }
 
                 if ((Key == ConsoleKey.UpArrow) && !(snake.Direction == SnakeDirection.Down))
-                { snake.Direction = SnakeDirection.Up; }
+                {
+                    if (snake.Head.Y - 1 != snake.Body[1].Y)
+                    {
+                        snake.Direction = SnakeDirection.Up;
+                    }
+                }
 
                 if ((Key == ConsoleKey.DownArrow) && !(snake.Direction == SnakeDirection.Up))
-                { snake.Direction = SnakeDirection.Down; }
+                {
+                    if (snake.Head.Y + 1 != snake.Body[1].Y)
+                    {
+                        snake.Direction = SnakeDirection.Down;
+                    }
+                }
 
                 if (Key == ConsoleKey.Escape)
                 {
@@ -142,16 +198,20 @@ namespace JogoDaCobrinha
                 }
             }
         }
-      
+
         private void CreateWindow()
         {
             for (int i = 0; i < heightWindow; i++)
             {
                 for (int j = 0; j < widthWindow; j++)
                 {
-                    if (i == 0 || i == heightWindow - 1) window[i, j] = '-';
-                    else if (j == 0 || j == widthWindow - 1) window[i, j] = '|';
-                    else window[i, j] = ' ';
+                    if (i == 0 && j == 0) window[i, j] = '┌';
+                    else if (i == 0 && j == widthWindow - 1) window[i, j] = '┐';
+                    else if (i == heightWindow - 1 && j == widthWindow - 1) window[i, j] = '┘';
+                    else if (i == heightWindow - 1 && j == 0) window[i, j] = '└';
+                    else if (i == 0 || i == heightWindow - 1) window[i, j] = '─';
+                    else if (j == 0 || j == widthWindow - 1) window[i, j] = '│';
+                    else { window[i, j] = ' '; continue; }
                 }
             }
         }
@@ -159,10 +219,10 @@ namespace JogoDaCobrinha
         private void UpdateWindow()
         {
             ClearWindow();
-            window[snake.Head.Y, snake.Head.X] = 'O';
+            window[snake.Head.Y, snake.Head.X] = 'Ö';
             for (int i = 1; i < snake.Size; i++)
             {
-                window[snake.Body[i].Y, snake.Body[i].X] = 'o';
+                window[snake.Body[i].Y, snake.Body[i].X] = '■';
             }
             window[fruit.Y, fruit.X] = '*';
         }
@@ -191,4 +251,3 @@ namespace JogoDaCobrinha
         }
     }
 }
-

@@ -16,7 +16,7 @@ namespace JogoDaCobrinha
         private readonly List<Pos> body = new List<Pos>();
         private bool alive = true;
         public SnakeDirection Direction { get; set; }
-        
+
         public List<Pos> Body
         { get { return body; } }
 
@@ -27,8 +27,8 @@ namespace JogoDaCobrinha
         { get { return alive; } }
 
         public int Size
-        { 
-            get { return size; } 
+        {
+            get { return size; }
             set { if (value >= 0) size = value; }
         }
 
@@ -49,15 +49,7 @@ namespace JogoDaCobrinha
 
         public void IncreaseSize()
         {
-            if (size == 0)
-            {
-                body.Add(new Pos(0, 0));
-            }else
-            {
-                int x = body[size - 1].X - 1;
-                int y = body[size - 1].Y;
-                body.Add(new Pos(x, y));
-            }
+            body.Add(new Pos(0, 0));
             size++;
         }
 
@@ -69,7 +61,7 @@ namespace JogoDaCobrinha
             }
             for (int i = 1; i < size; i++)
             {
-                if (Head.X == body[i].X && Head.Y == body[i].Y)
+                if (Head == body[i])
                 {
                     return true;
                 }
@@ -81,6 +73,7 @@ namespace JogoDaCobrinha
         {
             Reset();
             IncreaseSize();
+            IncreaseSize();
         }
         public void Kill() { alive = false; }
         public void Reset()
@@ -88,6 +81,7 @@ namespace JogoDaCobrinha
             body.Clear();
             size = 0;
             alive = true;
+            Direction = SnakeDirection.Right;
         }
     }
 }
